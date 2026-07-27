@@ -366,6 +366,26 @@ async function fetchAllHeadlines(){
   return results.flat();
 }
 
+async function pickAvailableModel(key){
+  const preferred = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-pro-latest'];
+  try{
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key));
+    if(!res.ok) return preferred[0];
+    const data = await res.json();
+    const available = (data.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => m.name.replace('models/', ''));
+    for(const p of preferred){
+      if(available.includes(p)) return p;
+    }
+    // fall back to any flash model available, else first available
+    const anyFlash = available.find(m => m.includes('flash'));
+    return anyFlash || available[0] || preferred[0];
+  }catch(e){
+    return preferred[0];
+  }
+}
+
 async function callGemini(headlines){
   const key = getKey();
   const list = headlines.map((h,i)=>`${i+1}. [${h.source}] ${h.title}`).join('\n');
@@ -382,7 +402,9 @@ Write a response in strict JSON with this exact shape, and nothing else (no mark
   "takeaways": ["5-7 short, punchy key takeaways as plain strings, each one sentence, most important first"]
 }`;
 
-  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(key), {
+  const model = await pickAvailableModel(key);
+
+  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(key), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -398,6 +420,9 @@ Write a response in strict JSON with this exact shape, and nothing else (no mark
     }
     if(res.status === 429){
       throw new Error('RATE_LIMIT');
+    }
+    if(res.status === 404){
+      throw new Error('MODEL_NOT_FOUND: tried "' + model + '" — your key may not have model access yet, or all preferred models are unavailable.');
     }
     throw new Error('API_ERROR: ' + res.status);
   }
@@ -442,6 +467,8 @@ async function generateBrief(){
       renderError("Gemini's free tier rate limit was hit. Wait a minute and try again — the free tier resets daily limits at midnight Pacific time.");
     } else if(e.message === 'NO_KEY_SAVED'){
       renderError('No API key found. Open Settings and add your Gemini key, then Save.');
+    } else if(e.message.startsWith('MODEL_NOT_FOUND')){
+      renderError('None of the expected Gemini models were available for your key. Details: <code>' + escapeHtml(e.message) + '</code>. This can happen right after creating a brand-new key — wait a few minutes and try again.');
     } else {
       renderError('Something went wrong generating the brief. Details: <code>' + escapeHtml(e.message || String(e)) + '</code>. Try again, or double-check your API key in Settings.');
     }

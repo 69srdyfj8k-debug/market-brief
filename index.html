@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>The Open — Daily Market Brief</title>
+<meta name="theme-color" content="#14181C">
+<style>
+  :root{
+    --bg: #14181C;
+    --bg-raised: #1B2126;
+    --bg-card: #1F262C;
+    --hairline: #2C363D;
+    --ink: #ECE7DC;
+    --ink-dim: #9BA6AC;
+    --ink-faint: #5E6A70;
+    --amber: #D9A441;
+    --up: #4F9D69;
+    --down: #C2554A;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    --mono: "SF Mono", "Menlo", "Consolas", monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:0 20px;}
+
+  header.masthead{
+    padding:28px 20px 18px;
+    border-bottom:1px solid var(--hairline);
+    position:relative;
+  }
+  .masthead-inner{max-width:720px;margin:0 auto;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand-mark{
+    font-family:var(--serif);
+    font-size:28px;
+    font-weight:600;
+    letter-spacing:0.3px;
+    color:var(--ink);
+  }
+  .brand-mark .dot{color:var(--amber);}
+  .settings-btn{
+    background:none;border:1px solid var(--hairline);color:var(--ink-dim);
+    font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;
+    padding:7px 12px;border-radius:3px;cursor:pointer;
+  }
+  .settings-btn:hover{border-color:var(--amber);color:var(--amber);}
+
+  .status-line{
+    font-family:var(--mono);font-size:11px;color:var(--ink-faint);
+    padding:10px 20px;border-bottom:1px solid var(--hairline);
+    max-width:720px;margin:0 auto;letter-spacing:0.3px;
+  }
+  .status-line .refresh-link{color:var(--amber);cursor:pointer;text-decoration:none;border-bottom:1px dotted var(--amber);}
+
+  main{padding:32px 20px 0;}
+
+  .empty-state{ text-align:center;padding:70px 20px;color:var(--ink-dim); }
+  .empty-state h2{font-family:var(--serif);font-weight:500;font-size:22px;color:var(--ink);margin-bottom:10px;}
+  .empty-state p{font-size:14px;line-height:1.6;max-width:400px;margin:0 auto 24px;color:var(--ink-dim);}
+  .cta-btn{
+    background:var(--amber);color:#14181C;border:none;
+    font-family:var(--sans);font-weight:600;font-size:14px;
+    padding:12px 26px;border-radius:3px;cursor:pointer;
+  }
+  .cta-btn:hover{background:#e5b153;}
+  .cta-btn:disabled{opacity:0.5;cursor:default;}
+
+  .loading-state{text-align:center;padding:70px 20px;color:var(--ink-dim);}
+  .loading-state .pulse{
+    font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--amber);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
+  .loading-detail{font-size:13px;margin-top:10px;color:var(--ink-faint);}
+
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--amber);margin-bottom:10px;
+  }
+  .narrative{
+    font-family:var(--serif);font-size:19px;line-height:1.65;color:var(--ink);
+    margin-bottom:34px;
+  }
+  .narrative p{margin:0 0 16px;}
+  .narrative p:last-child{margin-bottom:0;}
+
+  section.block{margin-bottom:36px;}
+  h3.block-title{
+    font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--ink-dim);margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--hairline);
+  }
+  ul.takeaways{list-style:none;margin:0;padding:0;}
+  ul.takeaways li{
+    display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--hairline);
+    font-size:14.5px;line-height:1.55;color:var(--ink);
+  }
+  ul.takeaways li:last-child{border-bottom:none;}
+  ul.takeaways li .idx{
+    font-family:var(--mono);color:var(--amber);font-size:12px;padding-top:2px;flex-shrink:0;width:18px;
+  }
+
+  .headlines-list{list-style:none;margin:0;padding:0;}
+  .headlines-list li{ padding:13px 0;border-bottom:1px solid var(--hairline); }
+  .headlines-list li:last-child{border-bottom:none;}
+  .headlines-list a{ color:var(--ink);text-decoration:none;font-size:14.5px;line-height:1.5;display:block; }
+  .headlines-list a:hover{color:var(--amber);}
+  .headline-meta{
+    font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.5px;
+    margin-top:5px;
+  }
+
+  footer{
+    text-align:center;padding:36px 20px 10px;color:var(--ink-faint);font-size:11px;font-family:var(--mono);
+  }
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(10,13,15,0.75);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--bg-card);border:1px solid var(--hairline);border-radius:6px;
+    max-width:440px;width:100%;padding:26px;
+  }
+  .modal h2{font-family:var(--serif);font-size:20px;margin:0 0 6px;color:var(--ink);}
+  .modal .sub{font-size:13px;color:var(--ink-dim);margin:0 0 20px;line-height:1.5;}
+  .modal label{
+    display:block;font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--ink-dim);margin-bottom:8px;
+  }
+  .modal input[type=password]{
+    width:100%;background:var(--bg);border:1px solid var(--hairline);color:var(--ink);
+    padding:11px 12px;border-radius:3px;font-family:var(--mono);font-size:13px;margin-bottom:16px;
+  }
+  .modal input:focus{outline:none;border-color:var(--amber);}
+  .modal .help-link{font-size:12px;color:var(--ink-faint);margin-bottom:20px;display:block;}
+  .modal .help-link a{color:var(--amber);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+  .modal-actions button{
+    font-family:var(--sans);font-size:13px;font-weight:600;padding:10px 18px;border-radius:3px;cursor:pointer;border:none;
+  }
+  .btn-cancel{background:none;border:1px solid var(--hairline) !important;color:var(--ink-dim);}
+  .btn-save{background:var(--amber);color:#14181C;}
+  .error-msg{
+    background:rgba(194,85,74,0.12);border:1px solid rgba(194,85,74,0.4);color:#E39187;
+    padding:10px 12px;border-radius:3px;font-size:13px;margin-bottom:16px;line-height:1.5;
+  }
+
+  @media (max-width:480px){
+    .narrative{font-size:17.5px;}
+    .brand-mark{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="brand">
+      <span class="brand-mark">The Open<span class="dot">.</span></span>
+    </div>
+    <button class="settings-btn" id="settingsBtn">Settings</button>
+  </div>
+</header>
+
+<div class="status-line" id="statusLine">Not yet generated today.</div>
+
+<main>
+  <div class="wrap" id="content"></div>
+</main>
+
+<footer>THE OPEN &mdash; PRIVATE DAILY BRIEF &mdash; SOURCES: REUTERS, CNBC, MARKETWATCH, YAHOO FINANCE</footer>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>Settings</h2>
+    <p class="sub">Your Gemini API key stays on this device only — stored in this browser, sent directly to Google, never anywhere else.</p>
+    <div id="modalError"></div>
+    <label for="apiKeyInput">Gemini API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="AIza...">
+    <span class="help-link">Don't have one? Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> — no credit card needed.</span>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelBtn">Cancel</button>
+      <button class="btn-save" id="saveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'open_gemini_key';
+const CACHE_KEY = 'open_brief_cache';
+
+const FEEDS = [
+  { name: 'Reuters Business', url: 'https://feeds.reuters.com/reuters/businessNews' },
+  { name: 'CNBC Markets', url: 'https://www.cnbc.com/id/10000664/device/rss/rss.html' },
+  { name: 'MarketWatch', url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories' },
+  { name: 'Yahoo Finance', url: 'https://finance.yahoo.com/news/rssindex' }
+];
+
+const RSS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+const el = {
+  content: document.getElementById('content'),
+  statusLine: document.getElementById('statusLine'),
+  settingsBtn: document.getElementById('settingsBtn'),
+  modalOverlay: document.getElementById('modalOverlay'),
+  apiKeyInput: document.getElementById('apiKeyInput'),
+  saveBtn: document.getElementById('saveBtn'),
+  cancelBtn: document.getElementById('cancelBtn'),
+  modalError: document.getElementById('modalError'),
+};
+
+function getKey(){ return localStorage.getItem(STORAGE_KEY) || ''; }
+function setKey(k){ localStorage.setItem(STORAGE_KEY, k); }
+
+function todayStr(){
+  return new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+}
+function todayKey(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function openModal(){
+  el.apiKeyInput.value = getKey();
+  el.modalError.innerHTML = '';
+  el.modalOverlay.classList.add('open');
+}
+function closeModal(){ el.modalOverlay.classList.remove('open'); }
+
+el.settingsBtn.addEventListener('click', openModal);
+el.cancelBtn.addEventListener('click', closeModal);
+el.modalOverlay.addEventListener('click', (e)=>{ if(e.target===el.modalOverlay) closeModal(); });
+el.saveBtn.addEventListener('click', ()=>{
+  const k = el.apiKeyInput.value.trim();
+  if(!k){ el.modalError.innerHTML = '<div class="error-msg">Please enter a key, or cancel.</div>'; return; }
+  setKey(k);
+  closeModal();
+  render();
+});
+
+function renderEmpty(){
+  el.statusLine.textContent = 'Not yet generated today.';
+  el.content.innerHTML = `
+    <div class="empty-state">
+      <h2>${todayStr()}</h2>
+      <p>Pull the morning's market-moving headlines from Reuters, CNBC, MarketWatch, and Yahoo Finance, and get an AI-written brief before the open.</p>
+      <button class="cta-btn" id="generateBtn">${getKey() ? 'Generate today\u2019s brief' : 'Add API key to begin'}</button>
+    </div>
+  `;
+  document.getElementById('generateBtn').addEventListener('click', ()=>{
+    if(!getKey()){ openModal(); return; }
+    generateBrief();
+  });
+}
+
+function renderLoading(detail){
+  el.content.innerHTML = `
+    <div class="loading-state">
+      <div class="pulse">Building today's brief</div>
+      <div class="loading-detail">${detail || ''}</div>
+    </div>
+  `;
+}
+
+function renderError(msg){
+  el.content.innerHTML = `
+    <div class="empty-state">
+      <h2>Couldn't generate the brief</h2>
+      <p>${msg}</p>
+      <button class="cta-btn" id="retryBtn">Try again</button>
+    </div>
+  `;
+  document.getElementById('retryBtn').addEventListener('click', generateBrief);
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function renderBrief(data, headlines){
+  el.statusLine.innerHTML = `Generated at ${data.generatedAt} &middot; ${headlines.length} headlines reviewed &middot; <span class="refresh-link" id="refreshLink">regenerate</span>`;
+
+  const takeawaysHtml = data.takeaways.map((t,i)=>`
+    <li><span class="idx">${String(i+1).padStart(2,'0')}</span><span>${escapeHtml(t)}</span></li>
+  `).join('');
+
+  const headlinesHtml = headlines.slice(0,14).map(h => `
+    <li>
+      <a href="${h.link}" target="_blank" rel="noopener">${escapeHtml(h.title)}</a>
+      <div class="headline-meta">${escapeHtml(h.source)}</div>
+    </li>
+  `).join('');
+
+  const narrativeHtml = data.narrative.split('\n\n').filter(p=>p.trim()).map(p=>`<p>${escapeHtml(p)}</p>`).join('');
+
+  el.content.innerHTML = `
+    <div class="eyebrow">${todayStr()}</div>
+    <div class="narrative">${narrativeHtml}</div>
+    <section class="block">
+      <h3 class="block-title">Key Takeaways</h3>
+      <ul class="takeaways">${takeawaysHtml}</ul>
+    </section>
+    <section class="block">
+      <h3 class="block-title">Today's Headlines</h3>
+      <ul class="headlines-list">${headlinesHtml}</ul>
+    </section>
+  `;
+
+  document.getElementById('refreshLink').addEventListener('click', generateBrief);
+}
+
+async function fetchFeed(feed){
+  try{
+    const res = await fetch(RSS_PROXY + encodeURIComponent(feed.url));
+    if(!res.ok) throw new Error('bad status');
+    const text = await res.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+    const items = Array.from(xml.querySelectorAll('item')).slice(0, 12);
+    return items.map(item => ({
+      title: item.querySelector('title')?.textContent?.trim() || '',
+      link: item.querySelector('link')?.textContent?.trim() || '#',
+      source: feed.name
+    })).filter(i => i.title);
+  }catch(e){
+    console.warn('Feed failed:', feed.name, e);
+    return [];
+  }
+}
+
+async function fetchAllHeadlines(){
+  const results = await Promise.all(FEEDS.map(fetchFeed));
+  return results.flat();
+}
+
+async function callGemini(headlines){
+  const key = getKey();
+  const list = headlines.map((h,i)=>`${i+1}. [${h.source}] ${h.title}`).join('\n');
+
+  const prompt = `You are a financial news editor writing a private daily brief for one reader who wants to understand what will affect US stock markets today.
+
+Here are today's headlines from Reuters, CNBC, MarketWatch, and Yahoo Finance:
+
+${list}
+
+Write a response in strict JSON with this exact shape, and nothing else (no markdown fences, no preamble):
+{
+  "narrative": "A 3-4 paragraph narrative summary (separated by \\n\\n) written like a sharp market open note. Focus on what's actually likely to move US markets today: Fed/rates, major earnings, macro data, sector-specific moves, geopolitical events with market relevance. Skip fluff and skip stories with no market relevance. Write in a confident, concise, Wall-Street-morning-note voice. Do not use bullet points in this field.",
+  "takeaways": ["5-7 short, punchy key takeaways as plain strings, each one sentence, most important first"]
+}`;
+
+  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(key), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.4 }
+    })
+  });
+
+  if(!res.ok){
+    const errBody = await res.text();
+    if(res.status === 400 && errBody.includes('API_KEY_INVALID')){
+      throw new Error('INVALID_KEY');
+    }
+    if(res.status === 429){
+      throw new Error('RATE_LIMIT');
+    }
+    throw new Error('API_ERROR: ' + res.status);
+  }
+
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  return JSON.parse(cleaned);
+}
+
+async function generateBrief(){
+  if(!getKey()){ openModal(); return; }
+
+  renderLoading('Fetching headlines from Reuters, CNBC, MarketWatch, Yahoo Finance…');
+  el.statusLine.textContent = 'Working…';
+
+  try{
+    const headlines = await fetchAllHeadlines();
+    if(headlines.length === 0){
+      renderError('No headlines could be fetched right now. This can happen if the RSS proxy is temporarily down — try again in a moment.');
+      return;
+    }
+
+    renderLoading(`Reviewed ${headlines.length} headlines. Writing the brief…`);
+
+    const result = await callGemini(headlines);
+    result.generatedAt = new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      date: todayKey(),
+      data: result,
+      headlines: headlines
+    }));
+
+    renderBrief(result, headlines);
+  }catch(e){
+    console.error(e);
+    if(e.message === 'INVALID_KEY'){
+      renderError('Your API key looks invalid. Open Settings and double-check it, or generate a new one at Google AI Studio.');
+    } else if(e.message === 'RATE_LIMIT'){
+      renderError("Gemini's free tier rate limit was hit. Wait a minute and try again — the free tier resets daily limits at midnight Pacific time.");
+    } else {
+      renderError('Something went wrong generating the brief. Try again — if it keeps failing, check your connection or API key in Settings.');
+    }
+  }
+}
+
+function render(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if(cached){
+    try{
+      const parsed = JSON.parse(cached);
+      if(parsed.date === todayKey()){
+        renderBrief(parsed.data, parsed.headlines);
+        return;
+      }
+    }catch(e){}
+  }
+  renderEmpty();
+}
+
+render();
+</script>
+</body>
+</html>

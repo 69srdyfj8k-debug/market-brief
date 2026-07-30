@@ -190,7 +190,7 @@
     <p class="sub">Your Gemini API key stays on this device only — stored in this browser, sent directly to Google, never anywhere else.</p>
     <div id="modalError"></div>
     <label for="apiKeyInput">Gemini API Key</label>
-    <input type="password" id="apiKeyInput" placeholder="AIza...">
+    <input type="password" id="apiKeyInput" placeholder="AQ... 或 sk-...">
     <span class="help-link">Don't have one? Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> — no credit card needed.</span>
     <div class="modal-actions">
       <button class="btn-cancel" id="cancelBtn">Cancel</button>
@@ -254,6 +254,12 @@ el.saveBtn.addEventListener('click', ()=>{
       return;
   }
 
+  // 清空錯誤並儲存
+  modalError.textContent = "";
+  localStorage.setItem('gemini_api_key', key); // 或原本的儲存邏輯
+  modalOverlay.style.display = 'none';
+});
+  
   setKey(k);
   const check = getKey();
   if(check !== k){

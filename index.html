@@ -184,11 +184,11 @@
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <h2>Settings</h2>
-    <p class="sub">Your API key stays on this device only — stored in this browser, sent directly to Gemini, never anywhere else.</p>
+    <p class="sub">Your Gemini API key stays on this device only — stored in this browser, sent directly to Google, never anywhere else.</p>
     <div id="modalError"></div>
-    <label for="apiKeyInput">API Key (Google Gemini)</label>
-    <input type="password" id="apiKeyInput" placeholder="sk-...">
-    <span class="help-link">Don't have one? Get a free key at <a href="https://aistudio.google.com/api-keys?project=gen-lang-client-0606186874" target="_blank">siliconflow.cn</a> — no credit card needed.</span>
+    <label for="apiKeyInput">Gemini API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="AQ... 或 AIza...">
+    <span class="help-link">Don't have one? Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> — no credit card needed.</span>
     <div class="modal-actions">
       <button class="btn-cancel" id="cancelBtn">Cancel</button>
       <button class="btn-save" id="saveBtn">Save</button>
@@ -197,7 +197,7 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'open_api_key';
+const STORAGE_KEY = 'open_gemini_key';
 const CACHE_KEY = 'open_brief_cache';
 
 const FEEDS = [
@@ -244,11 +244,11 @@ el.settingsBtn.addEventListener('click', openModal);
 el.cancelBtn.addEventListener('click', closeModal);
 el.modalOverlay.addEventListener('click', (e)=>{ if(e.target===el.modalOverlay) closeModal(); });
 
-// ⭕ 已完全修復 Save 按鈕事件邏輯：
+// ⭕ 已全面修復 Save 按鈕的事件監聽器邏輯 (支援新版 AQ. 開頭 Key)：
 el.saveBtn.addEventListener('click', ()=>{
   const k = el.apiKeyInput.value.trim();
-  if(!k || k.length < 8){ 
-    el.modalError.innerHTML = '<div class="error-msg">Please enter a valid API key.</div>'; 
+  if(!k || k.length < 10){ 
+    el.modalError.innerHTML = '<div class="error-msg">Please enter a valid Gemini API key.</div>'; 
     return; 
   }
 
@@ -365,8 +365,27 @@ async function fetchAllHeadlines(){
   return results.flat();
 }
 
-// ⭕ 已升級為香港免 VPN 直連嘅 SiliconFlow (DeepSeek-V3) API
-async function callAI(headlines){
+// ⭕ 已修正 Model 自動對接機制 (確保調用 gemini-1.5-flash)
+async function pickAvailableModel(key){
+  const preferred = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+  try{
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key));
+    if(!res.ok) return preferred[0];
+    const data = await res.json();
+    const available = (data.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => m.name.replace('models/', ''));
+    for(const p of preferred){
+      if(available.includes(p)) return p;
+    }
+    const anyFlash = available.find(m => m.includes('flash'));
+    return anyFlash || available[0] || preferred[0];
+  }catch(e){
+    return preferred[0];
+  }
+}
+
+async function callGemini(headlines){
   const key = getKey();
   const list = headlines.map((h,i)=>`${i+1}. [${h.source}] ${h.title}`).join('\n');
 
@@ -382,29 +401,33 @@ Write a response in strict JSON with this exact shape, and nothing else (no mark
   "takeaways": ["5-7 short, punchy key takeaways as plain strings, each one sentence, most important first"]
 }`;
 
-  const res = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+  const model = await pickAvailableModel(key);
+
+  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(key), {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + key
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'deepseek-ai/DeepSeek-V3',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.4
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.4 }
     })
   });
 
   if(!res.ok){
     const errBody = await res.text();
-    if(res.status === 401){
+    if(res.status === 400 && errBody.includes('API_KEY_INVALID')){
       throw new Error('INVALID_KEY');
+    }
+    if(res.status === 429){
+      throw new Error('RATE_LIMIT');
+    }
+    if(res.status === 404){
+      throw new Error('MODEL_NOT_FOUND: tried "' + model + '" — your key may not have model access yet, or all preferred models are unavailable.');
     }
     throw new Error('API_ERROR: ' + res.status);
   }
 
   const data = await res.json();
-  const text = data.choices?.[0]?.message?.content || '';
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
   return JSON.parse(cleaned);
 }
@@ -425,7 +448,7 @@ async function generateBrief(){
 
     renderLoading(`Reviewed ${headlines.length} headlines. Writing the brief…`);
 
-    const result = await callAI(headlines);
+    const result = await callGemini(headlines);
     result.generatedAt = new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
 
     localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -438,9 +461,13 @@ async function generateBrief(){
   }catch(e){
     console.error(e);
     if(e.message === 'INVALID_KEY'){
-      renderError('Your API key looks invalid. Open Settings and double-check it.');
+      renderError('Your API key looks invalid. Open Settings and double-check it, or generate a new one at Google AI Studio.');
+    } else if(e.message === 'RATE_LIMIT'){
+      renderError("Gemini's free tier rate limit was hit. Wait a minute and try again.");
     } else if(e.message === 'NO_KEY_SAVED'){
-      renderError('No API key found. Open Settings and add your API key, then Save.');
+      renderError('No API key found. Open Settings and add your Gemini key, then Save.');
+    } else if(e.message.startsWith('MODEL_NOT_FOUND')){
+      renderError('None of the expected Gemini models were available for your key. Details: <code>' + escapeHtml(e.message) + '</code>.');
     } else {
       renderError('Something went wrong generating the brief. Details: <code>' + escapeHtml(e.message || String(e)) + '</code>. Try again, or double-check your API key in Settings.');
     }

@@ -249,7 +249,7 @@ el.modalOverlay.addEventListener('click', (e)=>{ if(e.target===el.modalOverlay) 
 el.saveBtn.addEventListener('click', ()=>{
   const k = el.apiKeyInput.value.trim();
   if(!k){ el.modalError.innerHTML = '<div class="error-msg">Please enter a key, or cancel.</div>'; return; }
-  if(!k.startsWith('AIza')){
+  if(!k.startsWith('AQ')){
     el.modalError.innerHTML = '<div class="error-msg">That doesn\'t look like a Gemini key — they normally start with "AIza". Double check you copied the whole thing from Google AI Studio.</div>';
     return;
   }

@@ -367,7 +367,7 @@ async function fetchAllHeadlines(){
 
 // ⭕ 已修正 Model 自動對接機制 (確保調用 gemini-1.5-flash)
 async function pickAvailableModel(key){
-  const preferred = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash'];
+  const preferred = ['gemini-1.5-flash', 'gemini-1.5-pro'];
   try{
     const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key));
     if(!res.ok) return preferred[0];

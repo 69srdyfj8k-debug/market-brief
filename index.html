@@ -366,7 +366,7 @@ async function fetchAllHeadlines(){
 }
 
 async function pickAvailableModel(key){
-  const preferred = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+  const preferred = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
   try{
     const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key));
     if(!res.ok) return preferred[0];

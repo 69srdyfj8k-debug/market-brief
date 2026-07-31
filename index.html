@@ -365,7 +365,6 @@ async function fetchAllHeadlines(){
   return results.flat();
 }
 
-// ⭕ 已修正 Model 自動對接機制 (確保調用 gemini-1.5-flash)
 async function pickAvailableModel(key){
   const preferred = ['gemini-1.5-flash', 'gemini-1.5-pro'];
   try{
@@ -384,7 +383,7 @@ async function pickAvailableModel(key){
     return preferred[0];
   }
 }
-
+  
 async function callGemini(headlines){
   const key = getKey();
   const list = headlines.map((h,i)=>`${i+1}. [${h.source}] ${h.title}`).join('\n');
